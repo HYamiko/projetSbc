@@ -1,0 +1,5 @@
+src/ontologie/migrations/*.pyc
+src/ontologie/__pycache__/*
+src/projetSbc/__pycache__/*
+.env
+src/db.sqlite3
