@@ -1,21 +1,41 @@
 from pyexpat.errors import messages
 
-from django.shortcuts import render
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
 from .graphdb_requete import *
 
-# Create your views here.
-def Acccueil(request):
-    recherche = request.GET
-    print(recherche)
-    resultats = recherche_universites('')
-    print(resultats)
-#    universites = [result['universite']["value"] for result in resultats["results"]["bindings"]]
-    #for element in universites:
-      #  print(element)
-    return render(request, 'index.html', {"resultat": resultats})
+
+def index(request):
+    return render(request, 'index.html')
+
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        if not username or not password:
+            error_message = 'Veuillez entrer une adresse E-mail et un mot de passe.'
+            return render(request, "login.html", {'error':True,'error_message': error_message})
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            return redirect('home')  # Rediriger vers la page d'accueil ou une autre page après connexion
+        else:
+            error_message = 'Adresse E-mail ou mot de passe incorrect.'
+            return render(request, "login.html", { 'error':True, 'error_message': error_message})
+
+    return render(request, "login.html")
 
 
-def accueil(request):
+@login_required(login_url='/login/')
+def deconnexion(request):
+    logout(request)
+    return redirect('/')
+
+@login_required(login_url='/login/')
+def home(request):
     recherche = ''
     cle = ''
     cle_personnel = ''
@@ -61,7 +81,7 @@ def accueil(request):
 
 
 
-    return render(request, 'index.html', {
+    return render(request, 'home.html', {
         'recherche': recherche,
         'cle': cle,
         'clePersonnel': cle_personnel,

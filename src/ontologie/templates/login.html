@@ -1,0 +1,61 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Connexion</title>
+
+    <link rel="stylesheet" href="{% static 'ontologie/css/login.css' %}">
+    <link href="{% static 'ontologie/assets/css/main.css' %}" rel="stylesheet">
+  <link href="{% static 'ontologie/assets/img/logo.png' %}" rel="icon">
+
+
+  </head>
+  <body>
+    <div class="container-scroller">
+      <div class="container-fluid page-body-wrapper full-page-wrapper">
+        <div class="content-wrapper d-flex align-items-center auth px-0">
+          <div class="row w-100 mx-0">
+            <div class="col-lg-4 mx-auto">
+              <div class="auth-form-light text-left py-5 px-4 px-sm-5">
+                
+                    <div class="container-fluid container-xl position-relative d-flex align-items-center">
+
+                        <a href="index.html" class="logo d-flex align-items-center me-auto">
+                          <!-- Uncomment the line below if you also wish to use an image logo -->
+                          <img src="{% static 'ontologie/assets/img/logo.png' %}" alt="">
+                          <h1 class="sitename">OntoUniv</h1>
+                        </a>                  
+                      </div>
+                
+                <h4>Hello! Connectez-vous pour commencer</h4>
+                <h6 class="font-weight-light">Connectez-vous</h6>
+                {% if error %} <h4  class="error-message" style=" color: red;">{{ error_message }}</h4> {% endif %}
+
+                <form class="pt-3" method="post" role="form" action="{% url 'login' %}">
+                  {% csrf_token %}
+                  <div class="form-group">
+                    <input type="text" class="form-control form-control-lg" id="exampleInputEmail1" name="username" placeholder="Adresse e-mail">
+                  </div>
+                  <div class="form-group">
+                    <input type="password" class="form-control form-control-lg" id="exampleInputPassword1" name="password" placeholder="Mot de passe">
+                  </div>
+                  <div class="mt-3 d-grid gap-2">
+                    <button type="submit" class="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn" >SE CONNECTER</button>
+                  </div>
+
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- content-wrapper ends -->
+      </div>
+      <!-- page-body-wrapper ends -->
+    </div>
+
+    <!-- endinject -->
+  </body>
+</html>

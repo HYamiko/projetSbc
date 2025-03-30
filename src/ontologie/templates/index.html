@@ -1,186 +1,82 @@
 {% extends 'base.html' %}
-{% block title %}Accueil{% endblock %}
+{% load static %}
+
+
+{% block title %}OntoUniv{% endblock %}
+
+
 
 {% block content %}
-<div class="container mt-5 fs-4">
 
-<form method="post">
-  {% csrf_token %}
-  <div class="d-flex gap-2">
-    <input class="form-control form-control-lg" name="recherche" type="text" value="{{ recherche }}" {% if cle == "PERSONNEL"  %} placeholder="Rechercher un personnel" {% elif cle == "ETUDIANT"  %} placeholder="Rechercher un(e) étudiant(e)" {% else %}  placeholder="Rechercher" {% endif %}  aria-label=".form-control-lg example" >
+  <!-- Hero Section -->
+  <section id="hero" class="hero section">
 
-                    {% if cle == "ETUDIANT" %}
-          <input class="form-control form-control-lg" name="cleProgramme" type="text" value="{{ cleProgramme }}" placeholder="Nom programme" aria-label=".form-control-lg example" >
-        {% endif %}
+    <div class="container">
+      <div class="row gy-4">
+        <div class="col-lg-6 order-2 order-lg-1 d-flex flex-column justify-content-center">
+          <h1 data-aos="fade-up">Trouvez l'information académique en un clic.</h1>
+          <p data-aos="fade-up" data-aos-delay="100">Notre ontologie permet de rechercher des entités universitaires (université, programme, cours, personnes) sans complexité.</p>
+          <div class="d-flex flex-column flex-md-row" data-aos="fade-up" data-aos-delay="200">
+            <a href="{% url 'home' %}" class="btn-get-started">Testez la recherche dès maintenant <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </div>
+        <div class="col-lg-6 order-1 order-lg-2 hero-img" data-aos="zoom-out">
+          <img src="{% static 'ontologie/assets/img/image.png' %}" class="img-fluid animated" alt="">
+        </div>
+      </div>
+    </div>
 
-        {% if cle == "PERSONNEL" or cle == "ETUDIANT" %}
-          <input class="form-control form-control-lg" name="cleUniversite" type="text" value="{{ cleUniversite }}" placeholder="Nom université" aria-label=".form-control-lg example" >
-        {% endif %}
-
-
-
-            {% if cle == "PERSONNEL" %}
-          <select name="clePersonnel" class="form-control form-control-lg w-25" aria-label="Large select example" >
-        <option selected value="">Statut</option>
-      <option value="Personnel enseignant" {% if clePersonnel == "Personnel enseignant" %}selected{% endif %}>Personnel enseignant</option>
-      <option value="Personnel d'appui" {% if clePersonnel == "Personnel d'appui" %}selected{% endif %}>Personnel appui</option>
-    </select>
-      {% endif %}
-    <select name="cle" class="form-control form-control-lg w-25" aria-label="Large select example" required>
-        <option selected value="">Clé de la recherche</option>
-      <option value="UNIVERSITE" {% if cle == "UNIVERSITE" %}selected{% endif %}>Université</option>
-      <option value="PROGRAMME" {% if cle == "PROGRAMME" %}selected{% endif %}>Programme</option>
-      <option value="ENSEIGNANT" {% if cle == "ENSEIGNANT" %}selected{% endif %}>Enseignant</option>
-      <option value="ENSEIGNANT-ETUDIANT" {% if cle == "ENSEIGNANT-ETUDIANT" %}selected{% endif %}>Enseignant-Etudiant</option>
-      <option value="PERSONNEL" {% if cle == "PERSONNEL" %}selected{% endif %}>Personnel</option>
-      <option value="ETUDIANT" {% if cle == "ETUDIANT" %}selected{% endif %}>Etudiant</option>
-    </select>
-
-    {% if erreur %}
-            <span style="color: red;">
-                {{ message }}
-            </span>
-    {% endif %}
-
-    <button type="submit" class="btn btn-outline-primary">Rechercher</button>
-  </div>
-</form>
+  </section><!-- /Hero Section -->
 
 
 
-<table class="table mt-5">
-  <thead class="thead-dark">
-
-  {% if resultats %}
- {% if cle == "UNIVERSITE" %}
-      <tr>
-      <th scope="col">#</th>
-      <th scope="col">Université</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for valeur in resultats %}
-    <tr>
-      <th scope="row">{{ forloop.counter }}</th>
-      <td>{{ valeur.nomUniversite }}</td>
-    </tr>
-  {% endfor %}
-    </tbody>
-  {% elif cle == "PROGRAMME" %}
-
-       <tr>
-      <th scope="col">#</th>
-      <th scope="col">Programme</th>
-      <th scope="col">Université</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for valeur in resultats %}
-    <tr>
-      <th scope="row">{{ forloop.counter }}</th>
-      <td>{{ valeur.programme }}</td>
-      <td>{{ valeur.universite }}</td>
-    </tr>
-  {% endfor %}
-    </tbody>
-
-      {% elif cle == "ENSEIGNANT" %}
-       <tr >
-      <th scope="col">#</th>
-      <th scope="col">Enseignant</th>
-      <th scope="col">Cours enseigné</th>
-      <th scope="col">Université</th>
-    </tr>
-  </thead>
-  <tbody >
-    {% for valeur in resultats %}
-    <tr >
-      <th scope="row" >{{ forloop.counter }}</th>
-      <td>{{ valeur.enseignant }}</td>
-      <td>{{ valeur.cours }}</td>
-      <td>{{ valeur.universite }}</td>
-    </tr>
-  {% endfor %}
-    </tbody>
 
 
-      {% elif cle == "ENSEIGNANT-ETUDIANT" %}
-       <tr>
-      <th scope="col">#</th>
-      <th scope="col">Etudiant</th>
-      <th scope="col">Programme suivi</th>
-      <th scope="col">Université</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for valeur in resultats %}
-    <tr>
-      <th scope="row">{{ forloop.counter }}</th>
-      <td>{{ valeur.enseignant }}</td>
-      <td>{{ valeur.programme }}</td>
-      <td>{{ valeur.universite }}</td>
-    </tr>
-  {% endfor %}
-    </tbody>
+  <!-- Team Section -->
+  <section id="team" class="team section">
+
+    <!-- Section Title -->
+    <div class="container section-title" data-aos="fade-up">
+      <h2>équipe</h2>
+      <p>Notre équipe qui travaille dur</p>
+    </div><!-- End Section Title -->
+
+    <div class="container">
+
+      <div class="row gy-4 d-flex justify-content-center">
+
+        <div class="col-lg-3 col-md-6 d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="100">
+          <div class="team-member">
+            <div class="member-img">
+              <img src="{% static 'ontologie/assets/img/avatar.png' %}" class="img-fluid" alt="">
+            </div>
+            <div class="member-info">
+              <h4>HEMA Yamiko Abdoul Aziz</h4>
+              <span>Architecte Ontologie</span>
+              <p>J’ai transformé la complexité du système universitaire en un graphe de connaissances clair et interrogeable. Mon combat quotidien ? Des requêtes SPARQL qui retournent enfin les bons résultats !</p>
+            </div>
+          </div>
+        </div><!-- End Team Member -->
+
+        <div class="col-lg-3 col-md-6 d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="200">
+          <div class="team-member">
+            <div class="member-img">
+              <img src="{% static 'ontologie/assets/img/avatar.png' %}" class="img-fluid" alt="">
+            </div>
+            <div class="member-info">
+              <h4>TERRI Bosso Inoussa</h4>
+              <span>Design & Frontend</span>
+              <p>J'ai transformé des concepts complexes en une interface Bootstrap claire et interactive, pour que l'ontologie devienne accessible à tous.</p>
+            </div>
+          </div>
+        </div><!-- End Team Member -->
+      </div>
+
+    </div>
+
+  </section><!-- /Team Section -->
 
 
-
-      {% elif cle == "PERSONNEL" %}
-       <tr>
-      <th scope="col">#</th>
-      <th scope="col">Personnel</th>
-      <th scope="col">Statut</th>
-      <th scope="col">Université</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for valeur in resultats %}
-    <tr>
-      <th scope="row">{{ forloop.counter }}</th>
-      <td>{{ valeur.nomPersonnel }}</td>
-      <td>{{ valeur.typePersonnel }}</td>
-      <td>{{ valeur.nomUniversite }}</td>
-    </tr>
-  {% endfor %}
-    </tbody>
-
-
-
-      {% elif cle == "ETUDIANT" %}
-       <tr>
-      <th scope="col">#</th>
-      <th scope="col">Matricule</th>
-      <th scope="col">Etudiant</th>
-      <th scope="col">Programme suivi</th>
-      <th scope="col">Université</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for valeur in resultats %}
-    <tr>
-      <th scope="row">{{ forloop.counter }}</th>
-      <td>{{ valeur.matricule }}</td>
-      <td>{{ valeur.etudiant }}</td>
-      <td>{{ valeur.programme }}</td>
-      <td>{{ valeur.universite }}</td>
-    </tr>
-  {% endfor %}
-    </tbody>
-
-   {% endif %}
-
-
-
-{% else %}
-  {% if cle != "" %}
-    <p class="mt-5">Aucun résultat trouvé pour la recherche.</p>
-  {% endif %}
-
-{% endif %}
-
-
-</table>
-</div>
 
 {% endblock %}
 

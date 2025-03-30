@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}OntoUniv-Accueil{% endblock %}
+
+{% block content %}
+<div class="container fs-4" style="margin-top: 100px;">
+
+<form method="post">
+  {% csrf_token %}
+  <div class="d-flex gap-2 flex-column flex-md-row">
+    <input class="form-control form-control-lg" name="recherche" type="text" value="{{ recherche }}" {% if cle == "PERSONNEL"  %} placeholder="Rechercher un personnel" {% elif cle == "ETUDIANT"  %} placeholder="Rechercher un(e) étudiant(e)" {% else %}  placeholder="Rechercher" {% endif %}  aria-label=".form-control-lg example" >
+
+                    {% if cle == "ETUDIANT" %}
+          <input class="form-control form-control-lg" name="cleProgramme" type="text" value="{{ cleProgramme }}" placeholder="Nom programme" aria-label=".form-control-lg example" >
+        {% endif %}
+
+        {% if cle == "PERSONNEL" or cle == "ETUDIANT" %}
+          <input class="form-control form-control-lg" name="cleUniversite" type="text" value="{{ cleUniversite }}" placeholder="Nom université" aria-label=".form-control-lg example" >
+        {% endif %}
+
+
+
+            {% if cle == "PERSONNEL" %}
+          <select name="clePersonnel" class="form-control form-control-lg w-25" aria-label="Large select example" >
+        <option selected value="">Statut</option>
+      <option value="Personnel enseignant" {% if clePersonnel == "Personnel enseignant" %}selected{% endif %}>Personnel enseignant</option>
+      <option value="Personnel d'appui" {% if clePersonnel == "Personnel d'appui" %}selected{% endif %}>Personnel appui</option>
+    </select>
+      {% endif %}
+    <select name="cle" class="form-control form-control-lg w-25" aria-label="Large select example" required>
+        <option selected value="">Clé de la recherche</option>
+        <option value="ENSEIGNANT" {% if cle == "ENSEIGNANT" %}selected{% endif %}>Enseignant</option>
+              <option value="ENSEIGNANT-ETUDIANT" {% if cle == "ENSEIGNANT-ETUDIANT" %}selected{% endif %}>Enseignant-Etudiant</option>
+              <option value="ETUDIANT" {% if cle == "ETUDIANT" %}selected{% endif %}>Etudiant</option>
+      <option value="PERSONNEL" {% if cle == "PERSONNEL" %}selected{% endif %}>Personnel</option>
+      <option value="PROGRAMME" {% if cle == "PROGRAMME" %}selected{% endif %}>Programme</option>
+
+
+      <option value="UNIVERSITE" {% if cle == "UNIVERSITE" %}selected{% endif %}>Université</option>
+
+    </select>
+
+    {% if erreur %}
+            <span style="color: red;">
+                {{ message }}
+            </span>
+    {% endif %}
+
+    <button type="submit" class="btn btn-outline-primary">Rechercher</button>
+  </div>
+</form>
+
+
+
+<table class="table mt-5">
+  <thead class="thead-dark">
+
+  {% if resultats %}
+ {% if cle == "UNIVERSITE" %}
+      <tr>
+      <th scope="col" class="liste" > #</th>
+      <th scope="col" class="liste" >Université</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for valeur in resultats %}
+    <tr>
+      <th scope="row" class="liste">{{ forloop.counter }}</th>
+      <td>{{ valeur.nomUniversite }}</td>
+    </tr>
+  {% endfor %}
+    </tbody>
+  {% elif cle == "PROGRAMME" %}
+
+       <tr>
+      <th scope="col" class="liste">#</th>
+      <th scope="col" class="liste">Programme</th>
+      <th scope="col" class="liste">Université</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for valeur in resultats %}
+    <tr>
+      <th scope="row" class="liste">{{ forloop.counter }}</th>
+      <td>{{ valeur.programme }}</td>
+      <td>{{ valeur.universite }}</td>
+    </tr>
+  {% endfor %}
+    </tbody>
+
+      {% elif cle == "ENSEIGNANT" %}
+       <tr >
+      <th scope="col" class="liste">#</th>
+      <th scope="col" class="liste">Enseignant</th>
+      <th scope="col" class="liste">Cours enseigné</th>
+      <th scope="col" class="liste">Université</th>
+    </tr>
+  </thead>
+  <tbody >
+    {% for valeur in resultats %}
+    <tr >
+      <th scope="row" class="liste" >{{ forloop.counter }}</th>
+      <td>{{ valeur.enseignant }}</td>
+      <td>{{ valeur.cours }}</td>
+      <td>{{ valeur.universite }}</td>
+    </tr>
+  {% endfor %}
+    </tbody>
+
+
+      {% elif cle == "ENSEIGNANT-ETUDIANT" %}
+       <tr>
+      <th scope="col" class="liste">#</th>
+      <th scope="col" class="liste">Etudiant</th>
+      <th scope="col" class="liste">Programme suivi</th>
+      <th scope="col" class="liste">Université</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for valeur in resultats %}
+    <tr>
+      <th scope="row" class="liste">{{ forloop.counter }}</th>
+      <td>{{ valeur.enseignant }}</td>
+      <td>{{ valeur.programme }}</td>
+      <td>{{ valeur.universite }}</td>
+    </tr>
+  {% endfor %}
+    </tbody>
+
+
+
+      {% elif cle == "PERSONNEL" %}
+       <tr>
+      <th scope="col" class="liste">#</th>
+      <th scope="col" class="liste">Personnel</th>
+      <th scope="col" class="liste">Statut</th>
+      <th scope="col" class="liste">Université</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for valeur in resultats %}
+    <tr>
+      <th scope="row" class="liste">{{ forloop.counter }}</th>
+      <td>{{ valeur.nomPersonnel }}</td>
+      <td>{{ valeur.typePersonnel }}</td>
+      <td>{{ valeur.nomUniversite }}</td>
+    </tr>
+  {% endfor %}
+    </tbody>
+
+
+
+      {% elif cle == "ETUDIANT" %}
+       <tr>
+      <th scope="col" class="liste">#</th>
+      <th scope="col" class="liste">Matricule</th>
+      <th scope="col" class="liste">Etudiant</th>
+      <th scope="col" class="liste">Programme suivi</th>
+      <th scope="col" class="liste">Université</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for valeur in resultats %}
+    <tr>
+      <th scope="row" class="liste">{{ forloop.counter }}</th>
+      <td>{{ valeur.matricule }}</td>
+      <td>{{ valeur.etudiant }}</td>
+      <td>{{ valeur.programme }}</td>
+      <td>{{ valeur.universite }}</td>
+    </tr>
+  {% endfor %}
+    </tbody>
+
+   {% endif %}
+
+
+
+{% else %}
+  {% if cle != "" %}
+    <p class="mt-5">Aucun résultat trouvé pour la recherche.</p>
+  {% endif %}
+
+{% endif %}
+
+
+</table>
+</div>
+
+{% endblock %}
+
+{% block CodeJs %}
+    {% endblock CodeJs %}
