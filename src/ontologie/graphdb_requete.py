@@ -1,5 +1,10 @@
 import requests
-GRAPHDB_ENDPOINT = "http://localhost:7200/repositories/test-graph-db"
+from requests.auth import HTTPBasicAuth
+from urllib.parse import urljoin
+
+GRAPHDB_ENDPOINT = "http://graphdb-1036093977621.us-central1.run.app/repositories/projet-sbc"
+GRAPHDB_USER = "ontouniv"
+GRAPHDB_PASSWORD = "azertyAZERTY@#"
 
 
 def extract_local_name(uri):
@@ -8,20 +13,48 @@ def extract_local_name(uri):
     return uri.split('/')[-1]
 
 
+
+
 def requete_graphdb(sparql_query):
-    headers = {"Accept": "application/sparql-results+json"}
+    base_url = "https://graphdb-1036093977621.us-central1.run.app/"
+    endpoint = urljoin(base_url, "repositories/projet-sbc")
+
+    headers = {
+        "Accept": "application/sparql-results+json",
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+
     try:
         response = requests.post(
-            GRAPHDB_ENDPOINT,
+            endpoint,
             headers=headers,
-            data={"query": sparql_query},
-            timeout=10
+            auth=HTTPBasicAuth(GRAPHDB_USER, GRAPHDB_PASSWORD),
+            data=f"query={sparql_query}",  # Format critique
+            timeout=30,
+            allow_redirects=False
         )
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        raise Exception(f"Erreur SPARQL : {str(e)}")
 
+        if response.status_code == 302:
+            redirect_url = response.headers['Location']
+            response = requests.post(
+                redirect_url,
+                headers=headers,
+                auth=HTTPBasicAuth(GRAPHDB_USER, GRAPHDB_PASSWORD),
+                data=f"query={sparql_query}",
+                timeout=30
+            )
+
+        # 5. Validation de la réponse
+        if response.status_code == 200:
+            return response.json()
+        else:
+            error_msg = f"{response.status_code} - {response.text[:200]}"
+            raise Exception(f"Erreur serveur : {error_msg}")
+
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Erreur réseau : {str(e)}")
+    except Exception as e:
+        raise Exception(f"Erreur inattendue : {str(e)}")
 
 def recherche_universites(search_param):
     search_param = search_param.strip()
@@ -136,67 +169,88 @@ def recherche_enseignant_etudiant(search_param):
     return clean_results
 
 
-
-def recherche_personnel(recherche,nom_universite,type_personnel):
+def recherche_personnel(recherche, nom_universite, type_personnel):
     recherche = recherche.strip()
-    nom_universite= nom_universite.strip()
+    nom_universite = nom_universite.strip()
     type_personnel = type_personnel.strip()
+
+    filter_conditions = []
+
+    if recherche:
+        filter_conditions.append(f'CONTAINS(LCASE(?nomPersonnel), LCASE("{recherche}"))')
+
+    if nom_universite:
+        filter_conditions.append(f'CONTAINS(LCASE(?nomUniversite), LCASE("{nom_universite}"))')
+
+    if type_personnel:
+        type_filter = {
+            'enseignant': 'Personnel enseignant',
+            'appui': 'Personnel d\'appui'
+        }.get(type_personnel.lower(), type_personnel)
+        filter_conditions.append(f'CONTAINS(LCASE(?typePersonnel), LCASE("{type_filter}"))')
+
     query = f"""
-         PREFIX tp3-3: <http://www.semanticweb.org/yamiko/ontologies/2024/11/tp3-3#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        
-            SELECT ?nomPersonnel ?typePersonnel ?nomUniversite
-            WHERE {{
-              {{
-                ?personnel a/rdfs:subClassOf* tp3-3:PersonnelEnseignant ;
-                           tp3-3:NomPersonne ?nomPersonnel .
-                BIND("Personnel enseignant" AS ?typePersonnel)
-                
-                ?affiliation a tp3-3:PersonnelEnseignantUniversite ;
-                             tp3-3:estPersonnelEnseignant ?personnel ;
-                             tp3-3:estPersonnelDans ?universite .
-              }}
-              UNION
-              {{
-                ?personnel a/rdfs:subClassOf* tp3-3:PersonnelAppui ;
-                           tp3-3:NomPersonne ?nomPersonnel .
-                BIND("Personnel d'appui" AS ?typePersonnel)
-                
-                    ?affiliation a tp3-3:PersonnelAppuiUniversite ;
-                             tp3-3:estPersonnelAppui ?personnel ;
-                             tp3-3:estPersonnelDans ?universite .
-              }}
-              
-              ?universite tp3-3:NomUniversite ?nomUniversite .
-              
-              FILTER(
-           ({"true" if not recherche else f'CONTAINS(LCASE(?nomPersonnel), LCASE("{recherche}"))'})
-           &&
-           ({"true" if not nom_universite else f'CONTAINS(LCASE(?nomUniversite), LCASE("{nom_universite}"))'})
-           &&
-           ({"true" if not type_personnel else f'CONTAINS(LCASE(?typePersonnel), LCASE("{type_personnel}"))'})
-         )
-            }}
-            ORDER BY ?nomPersonnel
+    PREFIX tp3-3: <http://www.semanticweb.org/yamiko/ontologies/2024/11/tp3-3#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+    SELECT ?nomPersonnel ?typePersonnel ?nomUniversite
+    WHERE {{
+      {{
+        ?personnel a/rdfs:subClassOf* tp3-3:PersonnelEnseignant ;
+                   tp3-3:NomPersonne ?nomPersonnel .
+        BIND("Personnel enseignant" AS ?typePersonnel)
+
+        ?affiliation a tp3-3:PersonnelEnseignantUniversite ;
+                     tp3-3:estPersonnelEnseignant ?personnel ;
+                     tp3-3:estPersonnelDans ?universite .
+      }}
+      UNION
+      {{
+        ?personnel a/rdfs:subClassOf* tp3-3:PersonnelAppui ;
+                   tp3-3:NomPersonne ?nomPersonnel .
+        BIND("Personnel d'appui" AS ?typePersonnel)
+
+        ?affiliation a tp3-3:PersonnelAppuiUniversite ;
+                     tp3-3:estPersonnelAppui ?personnel ;
+                     tp3-3:estPersonnelDans ?universite .
+      }}
+
+      ?universite tp3-3:NomUniversite ?nomUniversite .
+      {f"FILTER({' && '.join(filter_conditions)})" if filter_conditions else ""}
+    }}
+    ORDER BY ?nomPersonnel
     """
-    results = requete_graphdb(query)
 
-    clean_results = []
-    for binding in results['results']['bindings']:
-        clean_results.append({
-            'nomPersonnel': extract_local_name(binding['nomPersonnel']['value']),
-            'typePersonnel': extract_local_name(binding['typePersonnel']['value']),
-            'nomUniversite': extract_local_name(binding['nomUniversite']['value'])
-        })
+    try:
+        results = requete_graphdb(query)
+        clean_results = []
+        for binding in results['results']['bindings']:
+            clean_results.append({
+                'nomPersonnel': extract_local_name(binding['nomPersonnel']['value']),
+                'typePersonnel': binding['typePersonnel']['value'],  # On garde la valeur originale
+                'nomUniversite': extract_local_name(binding['nomUniversite']['value'])
+            })
+        return clean_results
+    except Exception as e:
+        raise Exception(f"Erreur lors de la recherche du personnel: {str(e)}")
 
-    return clean_results
-
-
-
-def recherche_etudiant(search_param, nom_universite,nom_programme):
+def recherche_etudiant(search_param, nom_universite, nom_programme):
     search_param = search_param.strip()
     nom_universite = nom_universite.strip()
     nom_programme = nom_programme.strip()
+
+    filters = []
+
+    if search_param:
+        filters.append(
+            f'(CONTAINS(LCASE(?matricule), LCASE("{search_param}")) || CONTAINS(LCASE(?nomEtudiant), LCASE("{search_param}"))')
+
+    if nom_universite:
+        filters.append(f'CONTAINS(LCASE(?nomUniversite), LCASE("{nom_universite}"))')
+
+    if nom_programme:
+        filters.append(f'CONTAINS(LCASE(?nomProgramme), LCASE("{nom_programme}"))')
+
     query = f"""
     PREFIX tp3-3: <http://www.semanticweb.org/yamiko/ontologies/2024/11/tp3-3#>
     SELECT ?matricule ?nomEtudiant ?nomProgramme ?nomUniversite
@@ -209,26 +263,21 @@ def recherche_etudiant(search_param, nom_universite,nom_programme):
                            tp3-3:inscritProgramme ?programme.
       ?universite tp3-3:NomUniversite ?nomUniversite.
       ?programme tp3-3:NomProgramme ?nomProgramme.
-
-      FILTER(
-        ({"true" if not search_param else f'(CONTAINS(LCASE(?matricule), LCASE("{search_param}")) || CONTAINS(LCASE(?nomEtudiant), LCASE("{search_param}")))'})
-        &&
-        ({"true" if not nom_universite else f'CONTAINS(LCASE(?nomUniversite), LCASE("{nom_universite}"))'})
-        &&
-        ({"true" if not nom_programme else f'CONTAINS(LCASE(?nomProgramme), LCASE("{nom_programme}"))'})
-      )
+      {"FILTER(" + " && ".join(filters) + ")" if filters else ""}
     }}
     ORDER BY ?nomEtudiant
     """
-    results = requete_graphdb(query)
 
-    clean_results = []
-    for binding in results['results']['bindings']:
-        clean_results.append({
-            'etudiant': extract_local_name(binding['nomEtudiant']['value']),
-            'matricule': extract_local_name(binding['matricule']['value']),
-            'programme': extract_local_name(binding['nomProgramme']['value']),
-            'universite': extract_local_name(binding['nomUniversite']['value'])
-        })
-
-    return clean_results
+    try:
+        results = requete_graphdb(query)
+        clean_results = []
+        for binding in results['results']['bindings']:
+            clean_results.append({
+                'etudiant': extract_local_name(binding['nomEtudiant']['value']),
+                'matricule': extract_local_name(binding['matricule']['value']),
+                'programme': extract_local_name(binding['nomProgramme']['value']),
+                'universite': extract_local_name(binding['nomUniversite']['value'])
+            })
+        return clean_results
+    except Exception as e:
+        raise Exception(f"Erreur lors de la recherche : {str(e)}")

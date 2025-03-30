@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-%^$4xq*xwzwt_(__iq6s&$e)+uw&rhph$bjo5v%vz=4p@3#i^)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['https://graphdb-1036093977621.us-central1.run.app','127.0.0.1']
 
 
 # Application definition
