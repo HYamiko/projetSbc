@@ -13,8 +13,6 @@ def extract_local_name(uri):
     return uri.split('/')[-1]
 
 
-
-
 def requete_graphdb(sparql_query):
     base_url = "https://graphdb-1036093977621.us-central1.run.app/"
     endpoint = urljoin(base_url, "repositories/projet-sbc")
@@ -25,13 +23,15 @@ def requete_graphdb(sparql_query):
     }
 
     try:
+        from urllib.parse import urlencode
+        data = urlencode({'query': sparql_query})
+
         response = requests.post(
             endpoint,
             headers=headers,
             auth=HTTPBasicAuth(GRAPHDB_USER, GRAPHDB_PASSWORD),
-            data=f"query={sparql_query}",  # Format critique
-            timeout=30,
-            allow_redirects=False
+            data=data,
+            timeout=30
         )
 
         if response.status_code == 302:
@@ -40,11 +40,10 @@ def requete_graphdb(sparql_query):
                 redirect_url,
                 headers=headers,
                 auth=HTTPBasicAuth(GRAPHDB_USER, GRAPHDB_PASSWORD),
-                data=f"query={sparql_query}",
+                data=data,
                 timeout=30
             )
 
-        # 5. Validation de la réponse
         if response.status_code == 200:
             return response.json()
         else:
@@ -234,16 +233,33 @@ def recherche_personnel(recherche, nom_universite, type_personnel):
     except Exception as e:
         raise Exception(f"Erreur lors de la recherche du personnel: {str(e)}")
 
+
 def recherche_etudiant(search_param, nom_universite, nom_programme):
-    search_param = search_param.strip()
-    nom_universite = nom_universite.strip()
-    nom_programme = nom_programme.strip()
+    search_param = search_param.strip() if search_param else ""
+    nom_universite = nom_universite.strip() if nom_universite else ""
+    nom_programme = nom_programme.strip() if nom_programme else ""
+
+    query = f"""
+    PREFIX tp3-3: <http://www.semanticweb.org/yamiko/ontologies/2024/11/tp3-3#>
+    SELECT DISTINCT ?matricule ?nomEtudiant ?nomProgramme ?nomUniversite
+    WHERE {{
+      ?etudiant a tp3-3:Etudiant ;
+                tp3-3:estInscritA ?programmeUniversite ;
+                tp3-3:NomPersonne ?nomEtudiant ;
+                tp3-3:MatriculeEtudiant ?matricule .
+
+      ?programmeUniversite tp3-3:inscritUniversite ?universite ;
+                           tp3-3:inscritProgramme ?programme .
+
+      ?universite tp3-3:NomUniversite ?nomUniversite .
+      ?programme tp3-3:NomProgramme ?nomProgramme .
+    """
 
     filters = []
 
     if search_param:
         filters.append(
-            f'(CONTAINS(LCASE(?matricule), LCASE("{search_param}")) || CONTAINS(LCASE(?nomEtudiant), LCASE("{search_param}"))')
+            f'(CONTAINS(LCASE(?nomEtudiant), LCASE("{search_param}")) || CONTAINS(LCASE(?matricule), LCASE("{search_param}")))')
 
     if nom_universite:
         filters.append(f'CONTAINS(LCASE(?nomUniversite), LCASE("{nom_universite}"))')
@@ -251,33 +267,19 @@ def recherche_etudiant(search_param, nom_universite, nom_programme):
     if nom_programme:
         filters.append(f'CONTAINS(LCASE(?nomProgramme), LCASE("{nom_programme}"))')
 
-    query = f"""
-    PREFIX tp3-3: <http://www.semanticweb.org/yamiko/ontologies/2024/11/tp3-3#>
-    SELECT ?matricule ?nomEtudiant ?nomProgramme ?nomUniversite
-    WHERE {{
-      ?enseignant a tp3-3:Etudiant ;
-                  tp3-3:estInscritA ?programmeUniversite;
-                  tp3-3:NomPersonne ?nomEtudiant;
-                  tp3-3:MatriculeEtudiant ?matricule.
-      ?programmeUniversite tp3-3:inscritUniversite ?universite;
-                           tp3-3:inscritProgramme ?programme.
-      ?universite tp3-3:NomUniversite ?nomUniversite.
-      ?programme tp3-3:NomProgramme ?nomProgramme.
-      {"FILTER(" + " && ".join(filters) + ")" if filters else ""}
-    }}
-    ORDER BY ?nomEtudiant
-    """
+    if filters:
+        query += f"  FILTER ({' && '.join(filters)})\n"
+
+    query += "}\nORDER BY ?nomEtudiant"
+
 
     try:
         results = requete_graphdb(query)
-        clean_results = []
-        for binding in results['results']['bindings']:
-            clean_results.append({
-                'etudiant': extract_local_name(binding['nomEtudiant']['value']),
-                'matricule': extract_local_name(binding['matricule']['value']),
-                'programme': extract_local_name(binding['nomProgramme']['value']),
-                'universite': extract_local_name(binding['nomUniversite']['value'])
-            })
-        return clean_results
+        return [{
+            'etudiant': extract_local_name(binding['nomEtudiant']['value']),
+            'matricule': extract_local_name(binding['matricule']['value']),
+            'programme': extract_local_name(binding['nomProgramme']['value']),
+            'universite': extract_local_name(binding['nomUniversite']['value'])
+        } for binding in results['results']['bindings']]
     except Exception as e:
         raise Exception(f"Erreur lors de la recherche : {str(e)}")
